@@ -1,7 +1,7 @@
 " camelcasemotion.vim: Mappings for motion through CamelCaseWords and
 " underscore_notation. 
 "
-" DESCRIPTION:
+" DESCRIPTION: {{{1
 "   VIM provides many built-in motions, e.g. to move to the next word, or
 "   end of the current word. Most programming languages use either CamelCase
 "   ("anIdentifier") or underscore_notation ("an_identifier") naming
@@ -35,7 +35,7 @@
 "   ,e moves to: se[t], scrip[t], 3133[7], pat[h], an[d], nam[e], withou[t],
 "	extensio[n], 1[1], dpn[0]
 "
-" INSTALLATION:
+" INSTALLATION: {{{1
 "   Put the script into your user or system VIM plugin directory (e.g.
 "   ~/.vim/plugin). 
 "
@@ -73,7 +73,19 @@
 "
 " Source: Based on vimtip #1016 by Anthony Van Ham. 
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
-" REVISION	DATE		REMARKS 
+" REVISION	DATE		REMARKS {{{1
+"   1.20.011	02-Jun-2007	Thanks again to Joseph Barker for discussing the
+"				complicated visual mode mapping on the vim-dev
+"				mailing list and coming up with a great
+"				simplification:
+"				Removed s:CheckForChangesToTheSelectionSetting().
+"				Introduced s:VisualCamelCaseMotion(), which
+"				handles the differences depending on the
+"				'selection' setting. 
+"				Visual mode mappings now directly map to the
+"				s:VisualCamelCaseMotion() function; no mark is
+"				clobbered, the complex mapping with the inline
+"				expression has been retired. 
 "   1.20.010	29-May-2007	BF: The operator-pending and visual mode ,e
 "				mapping doesn't work properly when it reaches
 "				the end of line; the final character of the
@@ -144,16 +156,10 @@ if exists("loaded_camelcasemotion") || (v:version < 600)
     finish
 endif
 let loaded_camelcasemotion = 1
+" }}}1
 
 "- functions ------------------------------------------------------------------"
-function! s:CheckForChangesToTheSelectionSetting()
-    if s:selectionSetting != &selection
-	let s:selectionSetting = &selection
-	call s:SetupVisualModeMappings()
-    endif
-endfunction
-
-function! s:CamelCaseMotion( direction, count, mode )
+function! s:CamelCaseMotion( direction, count, mode ) " {{{1
     "echo "count is " . a:count
     let l:i = 0
     while l:i < a:count
@@ -200,9 +206,8 @@ function! s:CamelCaseMotion( direction, count, mode )
 	endif
 	let l:i = l:i + 1
     endwhile
-
-    call s:CheckForChangesToTheSelectionSetting()
 endfunction
+" }}}1
 
 "- mappings -------------------------------------------------------------------
 " The count is passed into the function through the special variable 'v:count1',
@@ -228,43 +233,40 @@ omap <silent> ,e :<C-U>call <SID>CamelCaseMotion('e',v:count1,'o')<CR>
 
 
 " Visual mode motions:
-function! s:SetupVisualModeMappings()
-    " Note: Complex mapping. 
-    " The expression is used to translate the optional [count] into multiple
-    " invocations of the <SID>CamelCaseMotion(..., 1) function. 
-    " The octal string constant \33 corresponds to <Esc>, and is used to exit the
-    " expression; ':' then enters command mode, and the second octal string constant
-    " \25 corresponds to <C-U>, which is used to clear the unused visual range
-    " (:`<,`>). 
-    " Finally, the current cursor position is stored in the ` mark, the visual
-    " selection is restored ('gv'), and the cursor position is restored ('g``').
-    " This allows the visual selection to be extended from either end, i.e. you can
-    " first use 'bv3,w' on "CamelCaseWordExample" to select "CamelCaseWord", then
-    " use ',b' to shink the selection to "CamelCase". 
-    "
+function! s:VisualCamelCaseMotion( direction, count, mode ) " {{{1
+    " Reselecting the current selection allows to call search() and issue normal
+    " mode motions while staying in visual mode. 
+    normal! gv
+
+    " Note_1a:
+    if &selection != 'exclusive' && a:direction == 'w'
+	normal! l
+    endif
+
+    call s:CamelCaseMotion( a:direction, a:count, a:mode )
+
     " Note: 'selection' setting. 
-    if &selection == 'exclusive'
+    if &selection == 'exclusive' && a:direction == 'e'
 	" When set to 'exclusive', the "forward to end" motion (',e') does not
 	" include the last character of the moved-over "word". To include that, an
-	" additional 'l' motion is appended; similar to the special treatment in
-	" operator-pending mode. 
-	vmap <silent> ,w @="\33:\25call <SID>CamelCaseMotion('w',1,'v')"<CR><CR>m`gvg``
-	vmap <silent> ,b @="\33:\25call <SID>CamelCaseMotion('b',1,'v')"<CR><CR>m`gvg``
-	vmap <silent> ,e @="\33:\25call <SID>CamelCaseMotion('e',1,'v')"<CR><CR>m`gvg``l
-    else
+	" additional 'l' motion is appended to the motion; similar to the
+	" special treatment in operator-pending mode. 
+	normal! l
+    elseif &selection != 'exclusive' && a:direction != 'e'
+	" Note_1b:
 	" The forward and backward motions move to the beginning of the next "word".
 	" When 'selection' is set to 'inclusive' or 'old', this is one character too far. 
 	" The appended 'h' motion undoes this. Because of this backward step,
 	" though, the forward motion finds the current "word" again, and would
-	" be stuck on the current "word". A prepended 'l' fixes that. 
-	vmap <silent> ,w @="\33l:\25call <SID>CamelCaseMotion('w',1,'v')"<CR><CR>m`gvg``h
-	vmap <silent> ,b @="\33:\25call <SID>CamelCaseMotion('b',1,'v')"<CR><CR>m`gvg``h
-	vmap <silent> ,e @="\33:\25call <SID>CamelCaseMotion('e',1,'v')"<CR><CR>m`gvg``
-    endif
+	" be stuck on the current "word". An 'l' motion before the CamelCase
+	" motion (see Note_1a) fixes that. 
+	normal! h
+    end
 endfunction
+" }}}1
 
-let s:selectionSetting = ''
-call s:SetupVisualModeMappings()
+vmap <silent> ,w :<C-U>call <SID>VisualCamelCaseMotion('w',v:count1,'v')<CR>
+vmap <silent> ,b :<C-U>call <SID>VisualCamelCaseMotion('b',v:count1,'v')<CR>
+vmap <silent> ,e :<C-U>call <SID>VisualCamelCaseMotion('e',v:count1,'v')<CR>
 
-
-" vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
+" vim: set sts=4 sw=4 noexpandtab ff=unix fdm=marker :
