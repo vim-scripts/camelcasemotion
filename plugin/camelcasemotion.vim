@@ -30,7 +30,7 @@
 "	set SCRIPT_31337_PATH_AND_NAME_WITHOUT_EXTENSION_11=%~dpn0
 "
 "   ,w moves to ([x] is cursor position): [s]et, [s]cript, [3]1337, [p]ath,
-"	[a]nd, [n]ame, [w]ithout, [e]xtension, [1]1, [d]pn0
+"	[a]nd, [n]ame, [w]ithout, [e]xtension, [1]1, [d]pn0, dpn[0], [s]et
 "   ,b moves to: [d]pn0, [1]1, [e]xtension, [w]ithout, ...
 "   ,e moves to: se[t], scrip[t], 3133[7], pat[h], an[d], nam[e], withou[t],
 "	extensio[n], 1[1], dpn[0]
@@ -74,6 +74,9 @@
 " Source: Based on vimtip #1016 by Anthony Van Ham. 
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS {{{1
+"   1.20.012	02-Jun-2007	BF: Corrected motions through mixed
+"				CamelCase_and_UnderScore words by re-ordering
+"				and narrowing the search patterns.  
 "   1.20.011	02-Jun-2007	Thanks again to Joseph Barker for discussing the
 "				complicated visual mode mapping on the vim-dev
 "				mailing list and coming up with a great
@@ -166,7 +169,9 @@ function! s:CamelCaseMotion( direction, count, mode ) " {{{1
 	if a:direction == 'e'
 	    " "Forward to end" motion. 
 	    "call search( '\>\|\(\a\|\d\)\+\ze_', 'We' )
-	    call search( '\>\|\(\a\|\d\)\+\ze_\|\u\l\+\|\u\+\ze\(\u\l\|\d\)\|\d\+', 'We' )
+	    " end of ...
+	    " number | ACRONYM followed by CamelCase or number | CamelCase | underscore_notation | word
+	    call search( '\d\+\|\u\+\ze\(\u\l\|\d\)\|\u\l\+\|\(\a\|\d\)\+\ze_\|\>', 'We' )
 	    if a:mode == 'o'
 		" Note: Special additional treatment for operator-pending mode
 		" "forward to end" motion. 
@@ -202,7 +207,9 @@ function! s:CamelCaseMotion( direction, count, mode ) " {{{1
 	    "call search( '\<\|\u', 'W' . l:direction )
 	    "call search( '\<\|\u\(\l\+\|\u\+\ze\u\)\|\d\+', 'W' . l:direction )
 	    "call search( '\<\|\u\(\l\+\|\u\+\ze\u\)\|\d\+\|_\zs\(\a\|\d\)\+', 'W' . l:direction )
-	    call search( '\<\(\u\+\ze\u\)\?\|_\zs\(\a\|\d\)\+\|\u\l\+\|\u\+\ze\(\u\l\|\d\)\|\d\+', 'W' . l:direction )
+	    " beginning of ...
+	    " word | number | ACRONYM followed by CamelCase or number | CamelCase | underscore followed by ACRONYM, Camel, lowercase or number
+	    call search( '\<\|\d\+\|\u\+\ze\(\u\l\|\d\)\|\u\l\+\|_\zs\(\u\+\|\u\l\+\|\l\+\|\d\+\)', 'W' . l:direction )
 	endif
 	let l:i = l:i + 1
     endwhile
@@ -234,8 +241,9 @@ omap <silent> ,e :<C-U>call <SID>CamelCaseMotion('e',v:count1,'o')<CR>
 
 " Visual mode motions:
 function! s:VisualCamelCaseMotion( direction, count, mode ) " {{{1
-    " Reselecting the current selection allows to call search() and issue normal
-    " mode motions while staying in visual mode. 
+    " Visual mode was left when calling this function. Reselecting the current
+    " selection returns to visual mode and allows to call search() and issue
+    " normal mode motions while staying in visual mode. 
     normal! gv
 
     " Note_1a:
