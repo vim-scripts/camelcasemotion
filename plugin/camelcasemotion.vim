@@ -15,6 +15,8 @@
 "   notation, where words are delimited by underscore ('_') characters. 
 "   From here on, both CamelCase and underscore_notation entities are referred
 "   to as "words" (in double quotes). 
+"   Outside of "words" (e.g. in non-keyword characters like // or ;), the new
+"   motions move just like the regular motions. 
 "
 " USAGE:
 "   Use the new motions ',w', ',b' and ',e' in normal mode, operator-pending
@@ -81,6 +83,15 @@
 " Source: Based on vimtip #1016 by Anthony Van Ham. 
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS {{{1
+"   1.30.014	20-Apr-2008	The motions now also stop at non-keyword
+"				boundaries, just like the regular motions. This
+"				has no effect inside a CamelCaseWord or inside
+"				underscore_notation, but it makes the motions
+"				behave like the regular motions (which is
+"				important if you replace the default motions). 
+"				Thanks to Mun Johl for reporting this. 
+"				Now using non-capturing parentheses \%() in the
+"				patterns. 
 "   1.30.013	09-Apr-2008	Refactored away s:VisualCamelCaseMotion(). 
 "				Allowing users to use mappings different than
 "				,w ,b ,e by defining <Plug>CamelCaseMotion_?
@@ -178,6 +189,12 @@ let loaded_camelcasemotion = 1
 
 "- functions ------------------------------------------------------------------"
 function! s:CamelCaseMove( direction, count, mode ) " {{{1
+    " Note: There is no inversion of the regular expression character class
+    " 'keyword character' (\k). We need an inversion "non-keyword" defined as
+    " "any non-whitespace character that is not a keyword character (e.g.
+    " [!@#$%^&*()]. This can be specified via a non-whitespace character in
+    " whose place no keyword character matches (\k\@!\S). 
+
     "echo "count is " . a:count
     let l:i = 0
     while l:i < a:count
@@ -185,8 +202,10 @@ function! s:CamelCaseMove( direction, count, mode ) " {{{1
 	    " "Forward to end" motion. 
 	    "call search( '\>\|\(\a\|\d\)\+\ze_', 'We' )
 	    " end of ...
-	    " number | ACRONYM followed by CamelCase or number | CamelCase | underscore_notation | word
-	    call search( '\d\+\|\u\+\ze\(\u\l\|\d\)\|\u\l\+\|\(\a\|\d\)\+\ze_\|\>', 'We' )
+	    " number | ACRONYM followed by CamelCase or number | CamelCase | underscore_notation | non-keyword | word
+	    call search( '\d\+\|\u\+\ze\%(\u\l\|\d\)\|\u\l\+\|\%(\a\|\d\)\+\ze_\|\%(\k\@!\S\)\+\|\%(_\@!\k\)\+\>', 'We' )
+	    " Note: word must be defined as '\k\>'; '\>' on its own somehow
+	    " dominates over the previous branch. 
 	    if a:mode == 'o'
 		" Note: Special additional treatment for operator-pending mode
 		" "forward to end" motion. 
@@ -223,8 +242,8 @@ function! s:CamelCaseMove( direction, count, mode ) " {{{1
 	    "call search( '\<\|\u\(\l\+\|\u\+\ze\u\)\|\d\+', 'W' . l:direction )
 	    "call search( '\<\|\u\(\l\+\|\u\+\ze\u\)\|\d\+\|_\zs\(\a\|\d\)\+', 'W' . l:direction )
 	    " beginning of ...
-	    " word | number | ACRONYM followed by CamelCase or number | CamelCase | underscore followed by ACRONYM, Camel, lowercase or number
-	    call search( '\<\|\d\+\|\u\+\ze\(\u\l\|\d\)\|\u\l\+\|_\zs\(\u\+\|\u\l\+\|\l\+\|\d\+\)', 'W' . l:direction )
+	    " word | empty line | non-keyword after whitespaces | non-whitespace after word | number | ACRONYM followed by CamelCase or number | CamelCase | underscore followed by ACRONYM, Camel, lowercase or number
+	    call search( '\<\|^$\|\%(^\|\s\)\+\zs\k\@!\S\|\>\S\|\d\+\|\u\+\ze\%(\u\l\|\d\)\|\u\l\+\|_\zs\%(\u\+\|\u\l\+\|\l\+\|\d\+\)', 'W' . l:direction )
 	endif
 	let l:i = l:i + 1
     endwhile
