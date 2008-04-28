@@ -67,11 +67,11 @@
 "
 "   Example: Replace the default 'w', 'b' and 'e' mappings instead of defining
 "   additional mappings ',w', ',b' and ',e':
-"       map <silent> w <Plug>CamelCaseMotion_w
-"       map <silent> b <Plug>CamelCaseMotion_b
-"       map <silent> e <Plug>CamelCaseMotion_e
+"	map <silent> w <Plug>CamelCaseMotion_w
+"	map <silent> b <Plug>CamelCaseMotion_b
+"	map <silent> e <Plug>CamelCaseMotion_e
 "
-"   Example: Replace default 'iw' text-object and define 'ie' and 'ib' motions: 
+"   Example: Replace default 'iw' text-object and define 'ib' and 'ie' motions: 
 "	omap <silent> iw <Plug>CamelCaseMotion_iw
 "	vmap <silent> iw <Plug>CamelCaseMotion_iw
 "	omap <silent> ib <Plug>CamelCaseMotion_ib
@@ -107,6 +107,10 @@
 " Source: Based on vimtip #1016 by Anthony Van Ham. 
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS {{{1
+"   1.40.016	28-Apr-2008	BF: Wrong forward motion stop at the second
+"				digit if a word starts with multiple numbers
+"				(e.g. 1234.56789). Thanks to Wasim Ahmed for
+"				reporting this. 
 "   1.40.015	24-Apr-2008	ENH: Added inner "word" text objects 'i,w' etc.
 "				that work analoguous to the built-in 'iw' text
 "				object. Thanks to David Kotchan for this
@@ -233,7 +237,9 @@ function! s:CamelCaseMove( direction, count, mode ) " {{{1
 	    " number | ACRONYM followed by CamelCase or number | CamelCase | underscore_notation | non-keyword | word
 	    call search( '\d\+\|\u\+\ze\%(\u\l\|\d\)\|\u\l\+\|\%(\a\|\d\)\+\ze_\|\%(\k\@!\S\)\+\|\%(_\@!\k\)\+\>', 'We' )
 	    " Note: word must be defined as '\k\>'; '\>' on its own somehow
-	    " dominates over the previous branch. 
+	    " dominates over the previous branch. Plus, \k must exclude the
+	    " underscore, or a trailing one will be incorrectly moved over:
+	    " '\%(_\@!\k\)'. 
 	    if a:mode == 'o'
 		" Note: Special additional treatment for operator-pending mode
 		" "forward to end" motion. 
@@ -271,7 +277,15 @@ function! s:CamelCaseMove( direction, count, mode ) " {{{1
 	    "call search( '\<\|\u\(\l\+\|\u\+\ze\u\)\|\d\+\|_\zs\(\a\|\d\)\+', 'W' . l:direction )
 	    " beginning of ...
 	    " word | empty line | non-keyword after whitespaces | non-whitespace after word | number | ACRONYM followed by CamelCase or number | CamelCase | underscore followed by ACRONYM, Camel, lowercase or number
-	    call search( '\<\|^$\|\%(^\|\s\)\+\zs\k\@!\S\|\>\S\|\d\+\|\u\+\ze\%(\u\l\|\d\)\|\u\l\+\|_\zs\%(\u\+\|\u\l\+\|\l\+\|\d\+\)', 'W' . l:direction )
+	    call search( '\<\D\|^$\|\%(^\|\s\)\+\zs\k\@!\S\|\>\S\|\d\+\|\u\+\ze\%(\u\l\|\d\)\|\u\l\+\|_\zs\%(\u\+\|\u\l\+\|\l\+\|\d\+\)', 'W' . l:direction )
+	    " Note: word must be defined as '\<\D' to avoid that a word like
+	    " 1234Test is moved over as [1][2]34[T]est instead of [1]234[T]est
+	    " because \< matches with zero width, and \d\+ will then start
+	    " matching '234'. To fix that, we make \d\+ be solely responsible
+	    " for numbers by taken this away from \< via \<\D. (An alternative
+	    " would be to replace \d\+ with \D\%#\zs\d\+, but that one is more
+	    " complex.) All other branches are not affected, because they match
+	    " multiple characters and not the same character multiple times. 
 	endif
 	let l:i = l:i + 1
     endwhile
