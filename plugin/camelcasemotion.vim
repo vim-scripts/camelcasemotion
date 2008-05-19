@@ -107,6 +107,9 @@
 " Source: Based on vimtip #1016 by Anthony Van Ham. 
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS {{{1
+"   1.40.017	19-May-2008	BF: Now using :normal! to be independent from
+"				any user mappings. Thanks to Neil Walker for the
+"				patch. 
 "   1.40.016	28-Apr-2008	BF: Wrong forward motion stop at the second
 "				digit if a word starts with multiple numbers
 "				(e.g. 1234.56789). Thanks to Wasim Ahmed for
@@ -259,7 +262,7 @@ function! s:CamelCaseMove( direction, count, mode ) " {{{1
 		" "set virtualedit=onemore" , but that didn't work. 
 		let l:save_ww = &whichwrap
 		set whichwrap+=l
-		normal l
+		normal! l
 		let &whichwrap = l:save_ww
 	    endif
 	else
@@ -364,13 +367,13 @@ function! s:CamelCaseInnerMotion( direction, count ) " {{{1
 	" Do not do the selection backwards, because the backwards "word" motion
 	" in visual mode + selection=inclusive has an off-by-one error. 
 	call s:CamelCaseMotion( 'b', a:count, 'n' )
-	normal v
+	normal! v
 	" We decree that 'b' is the opposite of 'e', not 'w'. This makes more
 	" sense at the end of a line and for underscore_notation. 
 	call s:CamelCaseMotion( 'e', a:count, 'iv' )
     else
 	call s:CamelCaseMotion( 'b', 1, 'n' )
-	normal v
+	normal! v
 	call s:CamelCaseMotion( a:direction, a:count, 'iv' )
     endif
 endfunction
