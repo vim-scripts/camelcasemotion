@@ -8,7 +8,7 @@ for identifiers. The best way to navigate inside those identifiers using Vim
 built-in motions is the [count]f{char} motion, i.e. f{uppercase-char} or f_,
 respectively. But we can make this easier: 
 
-This script defines motions ',w', ',b' and ',e' (similar to 'w', 'b', 'e'),
+This plugin defines motions ',w', ',b' and ',e' (similar to 'w', 'b', 'e'),
 which do not move word-wise (forward/backward), but Camel-wise; i.e. to word
 boundaries and uppercase letters. The motions also work on underscore notation,
 where words are delimited by underscore ('_') characters. From here on, both
@@ -18,7 +18,7 @@ over multiple "words" at once. Outside of "words" (e.g. in non-keyword
 characters like // or ;), the new motions move just like the regular motions. 
 
 Vim provides a built-in 'iw' text object called 'inner word', which works in
-operator-pending and visual mode. Analog to that, this script defines inner
+operator-pending and visual mode. Analog to that, this plugin defines inner
 "word" motions 'i,w', 'i,b' and 'i,e', which select the "word" (or multiple
 "words" if a [count] is given) where the cursor is located. 
 

@@ -2,13 +2,16 @@
 "
 " DEPENDENCIES:
 "   - Requires Vim 7.0 or higher. 
+"   - camelcasemotion.vim autoload script. 
 "
-" Copyright: (C) 2007-2009 by Ingo Karkat
+" Copyright: (C) 2007-2011 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Source: Based on vimtip #1016 by Anthony Van Ham. 
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.51.020	30-Sep-2011	Use <silent> for <Plug> mapping instead of
+"				default mapping. 
 "   1.50.019	05-May-2009	Do not create mappings for select mode;
 "				according to|Select-mode|, printable character
 "				commands should delete the selection and insert
@@ -149,17 +152,17 @@ function! s:CreateMotionMappings()
     " Create mappings according to this template:
     " (* stands for the mode [nov], ? for the underlying motion [wbe].) 
     "
-    " *noremap <Plug>CamelCaseMotion_? :<C-U>call camelcasemotion#Motion('?',v:count1,'*')<CR>
+    " *noremap <silent> <Plug>CamelCaseMotion_? :<C-U>call camelcasemotion#Motion('?',v:count1,'*')<CR>
     " if ! hasmapto('<Plug>CamelCaseMotion_?', '*')
-    "	  *map <silent> ,? <Plug>CamelCaseMotion_?
+    "	  *map ,? <Plug>CamelCaseMotion_?
     " endif
 
     for l:mode in ['n', 'o', 'v']
 	for l:motion in ['w', 'b', 'e']
 	    let l:targetMapping = '<Plug>CamelCaseMotion_' . l:motion
-	    execute l:mode . 'noremap ' . l:targetMapping . ' :<C-U>call camelcasemotion#Motion(''' . l:motion . ''',v:count1,''' . l:mode . ''')<CR>'
+	    execute l:mode . 'noremap <silent> ' . l:targetMapping . ' :<C-U>call camelcasemotion#Motion(''' . l:motion . ''',v:count1,''' . l:mode . ''')<CR>'
 	    if ! hasmapto(l:targetMapping, l:mode)
-		execute (l:mode ==# 'v' ? 'x' : l:mode) . 'map <silent> ,' . l:motion . ' ' . l:targetMapping 
+		execute (l:mode ==# 'v' ? 'x' : l:mode) . 'map ,' . l:motion . ' ' . l:targetMapping 
 	    endif
 	endfor
     endfor
@@ -179,17 +182,17 @@ function! s:CreateInnerMotionMappings()
     " Create mappings according to this template:
     " (* stands for the mode [ov], ? for the underlying motion [wbe].) 
     "
-    " *noremap <Plug>CamelCaseMotion_i? :<C-U>call camelcasemotion#InnerMotion('?',v:count1)<CR>
+    " *noremap <silent> <Plug>CamelCaseMotion_i? :<C-U>call camelcasemotion#InnerMotion('?',v:count1)<CR>
     " if ! hasmapto('<Plug>CamelCaseInnerMotion_i?', '*')
-    "	  *map <silent> i,? <Plug>CamelCaseInnerMotion_i?
+    "	  *map i,? <Plug>CamelCaseInnerMotion_i?
     " endif
 
     for l:mode in ['o', 'v']
 	for l:motion in ['w', 'b', 'e']
 	    let l:targetMapping = '<Plug>CamelCaseMotion_i' . l:motion
-	    execute l:mode . 'noremap ' . l:targetMapping . ' :<C-U>call camelcasemotion#InnerMotion(''' . l:motion . ''',v:count1)<CR>'
+	    execute l:mode . 'noremap <silent> ' . l:targetMapping . ' :<C-U>call camelcasemotion#InnerMotion(''' . l:motion . ''',v:count1)<CR>'
 	    if ! hasmapto(l:targetMapping, l:mode)
-		execute (l:mode ==# 'v' ? 'x' : l:mode) . 'map <silent> i,' . l:motion . ' ' . l:targetMapping 
+		execute (l:mode ==# 'v' ? 'x' : l:mode) . 'map i,' . l:motion . ' ' . l:targetMapping 
 	    endif
 	endfor
     endfor
